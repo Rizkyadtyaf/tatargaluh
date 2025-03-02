@@ -14,7 +14,10 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log("[NextAuth] Authorize attempt with credentials:", { name: credentials?.name });
+          
           if (!credentials?.name || !credentials?.password) {
+            console.error("[NextAuth] Missing credentials");
             throw new Error("Missing credentials");
           }
 
@@ -24,16 +27,22 @@ export const authOptions: NextAuthOptions = {
             }
           });
 
+          console.log("[NextAuth] User found:", user ? { id: user.id, name: user.name, role: user.role } : "No user found");
+
           if (!user) {
+            console.error("[NextAuth] User not found for name:", credentials.name);
             throw new Error("User not found");
           }
 
           const isPasswordValid = credentials.password === user.password;
+          console.log("[NextAuth] Password validation:", isPasswordValid ? "Success" : "Failed");
 
           if (!isPasswordValid) {
+            console.error("[NextAuth] Invalid password for user:", user.name);
             throw new Error("Invalid password");
           }
 
+          console.log("[NextAuth] Authentication successful for user:", user.name);
           return {
             id: user.id,
             name: user.name,
@@ -41,7 +50,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error("Auth error:", error);
+          console.error("[NextAuth] Authentication error:", error);
           return null;
         }
       }
@@ -49,20 +58,49 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user }) {
+      console.log("[NextAuth] JWT Callback - Input:", { 
+        tokenUserId: token.sub, 
+        tokenRole: token.role,
+        userId: user?.id,
+        userRole: user?.role 
+      });
+      
       if (user) {
         token.role = user.role;
+        console.log("[NextAuth] JWT updated with role:", user.role);
       }
       return token;
     },
     async session({ session, token }) {
+      console.log("[NextAuth] Session Callback - Before:", { 
+        sessionUser: session?.user,
+        tokenRole: token.role
+      });
+      
       if (session?.user) {
         session.user.role = token.role;
+        console.log("[NextAuth] Session updated with role:", token.role);
       }
+      
+      console.log("[NextAuth] Session Callback - After:", { 
+        sessionUserRole: session?.user?.role
+      });
+      
       return session;
     },
     async redirect({ url, baseUrl }) {
-      // Selalu redirect ke /admin/dashboard setelah login berhasil
-      return '/admin/dashboard';
+      console.log("[NextAuth] Redirect Callback - Input:", { url, baseUrl });
+      
+      // Jika URL sudah lengkap, gunakan itu
+      if (url.startsWith('http')) {
+        console.log("[NextAuth] Using provided URL:", url);
+        return url;
+      }
+      
+      // Jika URL adalah path relatif, gabungkan dengan baseUrl
+      const redirectUrl = `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+      console.log("[NextAuth] Redirecting to:", redirectUrl);
+      return redirectUrl;
     }
   },
   pages: {

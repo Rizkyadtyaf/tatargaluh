@@ -2,15 +2,23 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { IconHome, IconMenu } from './Icons';
+import { IconHome, IconMenu, IconLogout } from './Icons';
+import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleLogout = async () => {
+    await signOut({ redirect: false });
+    router.replace('/admin/login');
+  };
 
   if (!mounted) {
     return null;
@@ -30,6 +38,18 @@ export default function AdminSidebar() {
           <IconHome />
         </Link>
       </nav>
+
+      {/* Spacer to push logout button to bottom */}
+      <div className="flex-grow"></div>
+      
+      {/* Logout button */}
+      <button 
+        onClick={handleLogout}
+        className={`w-12 h-12 text-red-500 hover:bg-red-500/10 rounded-xl flex items-center justify-center transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'} mb-4`}
+        title="Logout"
+      >
+        <IconLogout />
+      </button>
     </aside>
   );
 }

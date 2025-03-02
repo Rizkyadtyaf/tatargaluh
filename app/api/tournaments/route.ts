@@ -1,14 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import prisma from '@/lib/prisma';
-
-// Helper function to check auth
-function getAuthCookie() {
-  const cookieStore = cookies();
-  return cookieStore.get('auth');
-}
+import { getServerSession } from 'next-auth';
+import { prisma } from '@/lib/db';
+import { authOptions } from '../auth/[...nextauth]/route';
 
 // Helper function to create JSON response
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function json(data: any, init?: ResponseInit) {
   return new NextResponse(JSON.stringify(data), {
     ...init,
@@ -21,8 +17,9 @@ function json(data: any, init?: ResponseInit) {
 
 export async function GET() {
   try {
-    // Check auth
-    if (!getAuthCookie()) {
+    // Check auth using NextAuth session
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -39,8 +36,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    // Check auth
-    if (!getAuthCookie()) {
+    // Check auth using NextAuth session
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return json({ error: 'Unauthorized' }, { status: 401 });
     }
 

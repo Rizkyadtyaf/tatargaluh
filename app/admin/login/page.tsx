@@ -14,26 +14,38 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('[LoginPage] Login attempt for user:', name);
       setIsLoading(true);
       setError('');
 
+      console.log('[LoginPage] Calling NextAuth signIn...');
       const result = await signIn('credentials', {
         name,
         password,
         redirect: false,
       });
 
+      console.log('[LoginPage] SignIn result:', {
+        ok: result?.ok,
+        error: result?.error,
+        url: result?.url,
+        status: result?.status
+      });
+
       if (!result?.error) {
-        // Kalau berhasil login, redirect ke dashboard
+        console.log('[LoginPage] Login successful, redirecting to dashboard');
+        // Kalau berhasil login, redirect ke dashboard admin
         router.replace('/admin/dashboard');
       } else {
+        console.error('[LoginPage] Login failed:', result.error);
         setError('Username atau password salah');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[LoginPage] Login error:', error);
       setError('An error occurred during login');
     } finally {
       setIsLoading(false);
+      console.log('[LoginPage] Login process completed');
     }
   };
 

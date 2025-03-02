@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { useSession, signOut } from 'next-auth/react';
 import AdminSidebar from '../../components/AdminSidebar';
 
 interface Tournament {
@@ -25,22 +25,38 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      console.log('User is not authenticated, redirecting to login page');
+      router.push('/admin/login');
+    },
+  });
 
-  // Check auth and fetch data
+  // Log session status dan data untuk debugging
+  console.log("Dashboard session status:", status);
+  console.log("Dashboard session data:", session);
+  console.log("Dashboard cookies:", document.cookie);
+
+  console.log("Dashboard session status:", status);
+  console.log("Dashboard session data:", session);
+
+  // Fetch data when authenticated
   useEffect(() => {
-    const auth = Cookies.get('auth');
-    if (!auth) {
-      router.replace('/admin/login');
-      return;
+    console.log("useEffect triggered, status:", status);
+    
+    if (status === 'authenticated') {
+      console.log('User authenticated, fetching tournaments');
+      fetchTournaments();
     }
-    fetchTournaments();
-  }, [router]);
+  }, [status]);
 
   // Helper function to handle API responses
   async function handleApiResponse(response: Response) {
     if (response.status === 401) {
-      Cookies.remove('auth');
-      router.replace('/admin/login');
+      console.log('API returned 401, signing out');
+      await signOut({ redirect: false });
+      router.push('/admin/login');
       return null;
     }
 
@@ -56,6 +72,7 @@ export default function AdminDashboardPage() {
   // Fetch tournaments
   const fetchTournaments = async () => {
     try {
+      console.log('Starting to fetch tournaments');
       setError('');
       setLoading(true);
 
@@ -65,15 +82,21 @@ export default function AdminDashboardPage() {
         },
       });
 
+      console.log('Tournament API response status:', response.status);
+      
       const data = await handleApiResponse(response);
+      console.log('Tournament API response data:', data);
+      
       if (data) {
         setTournaments(data.tournaments);
+        console.log('Tournaments set:', data.tournaments);
       }
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load tournaments');
     } finally {
       setLoading(false);
+      console.log('Fetch tournaments completed, loading set to false');
     }
   };
 
@@ -102,19 +125,42 @@ export default function AdminDashboardPage() {
   };
 
   // Handle logout
-  const handleLogout = () => {
-    Cookies.remove('auth');
-    router.replace('/admin/login');
+  const handleLogout = async () => {
+    console.log('Logging out...');
+    await signOut({ redirect: false });
+    router.push('/admin/login');
   };
 
-  // Loading state
-  if (loading) {
+  // Loading state for initial session check
+  if (status === 'loading') {
+    console.log('Rendering loading state for session check');
     return (
       <div className="flex h-screen bg-background">
         <AdminSidebar />
         <main className="flex-1 p-8">
           <div className="flex justify-between items-center mb-8">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          </div>
+          <div className="text-center mt-8">Checking authentication...</div>
+        </main>
+      </div>
+    );
+  }
+
+  // Loading state for tournaments
+  if (loading && status === 'authenticated') {
+    console.log('Rendering loading state for tournaments');
+    return (
+      <div className="flex h-screen bg-background">
+        <AdminSidebar />
+        <main className="flex-1 p-8">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+              {session?.user?.name && (
+                <p className="text-sm text-gray-400">Logged in as: {session.user.name}</p>
+              )}
+            </div>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
@@ -122,19 +168,25 @@ export default function AdminDashboardPage() {
               Logout
             </button>
           </div>
-          <div className="text-center">Loading tournaments...</div>
+          <div className="text-center mt-8">Loading tournaments...</div>
         </main>
       </div>
     );
   }
 
   // Main dashboard
+  console.log('Rendering main dashboard');
   return (
     <div className="flex h-screen bg-background">
       <AdminSidebar />
       <main className="flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            {session?.user?.name && (
+              <p className="text-sm text-gray-400">Logged in as: {session.user.name}</p>
+            )}
+          </div>
           <button
             onClick={handleLogout}
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
