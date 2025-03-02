@@ -3,19 +3,59 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #00FF9D;
+  --primary-dark: #00CC7D;
+  --background: #0A192F;
+  --surface: #122543;
+  --surface-dark: #1A3366;
+  --text: #FFFFFF;
+  --text-secondary: #94A3B8;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-background text-white;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .card {
+    @apply bg-surface rounded-xl p-4 transition-transform hover:scale-[1.02];
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-black px-4 py-2 rounded-full hover:bg-primary-dark transition-colors;
+  }
+  
+  .stats-value {
+    @apply text-primary font-medium;
+  }
+
+  .nav-icon {
+    @apply w-12 h-12 rounded-xl flex items-center justify-center text-gray-400 hover:text-primary hover:bg-surface-dark transition-all;
+  }
+
+  .nav-icon.active {
+    @apply text-primary bg-surface-dark;
+  }
+  
+  .player-card {
+    @apply bg-surface p-6 rounded-xl hover:bg-surface-dark transition-all duration-300;
+  }
+  
+  .player-avatar {
+    @apply relative w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30;
+  }
+  
+  .stat-row {
+    @apply flex items-center justify-between py-2;
+  }
+  
+  .stat-label {
+    @apply text-gray-400 text-sm;
+  }
+  
+  .stat-value {
+    @apply text-primary font-medium text-sm;
+  }
 }

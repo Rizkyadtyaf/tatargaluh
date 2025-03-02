@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("user")
+  accounts      Account[]
+  sessions      Session[]
+  achievements  UserAchievement[]
+}
+
+model Tournament {
+  id      String  @id @default(cuid())
+  name    String
+  matches Match[]
+}
+
+model Match {
+  id           String     @id @default(cuid())
+  round        String
+  placement    String
+  kills        Int
+  date         DateTime
+  prize        String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  tournamentId String
+}
+
+model Achievement {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+  points      Int
+  image_url   String?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  achieved_at   DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model Team {
+  id            String       @id @default(cuid())
+  name          String
+  total_matches Int         @default(0)
+  win_rate      Float       @default(0)
+  total_kills   Int         @default(0)
+  avg_survival  Int         @default(0)
+  players       TeamPlayer[]
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+}
+
+model TeamPlayer {
+  id         String   @id @default(cuid())
+  name       String
+  role       String
+  win_rate   Float    @default(0)
+  matches    Int      @default(0)
+  kills      Int      @default(0)
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId     String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
